@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vòng Quay Tết CAQ</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background: #b30000; color: #ffd700; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
+        .logo { width: 80px; margin: 10px; }
+        .form-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin: 10px auto; width: 90%; max-width: 320px; border: 1px solid #ffd700; }
+        input { width: 85%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; }
+        #spin_btn { background: #ffd700; color: #b30000; padding: 12px; border: none; font-weight: bold; border-radius: 20px; cursor: pointer; width: 100%; font-size: 1.1rem; }
+        #spin_btn:disabled { background: #888; }
+        .wheel-wrap { position: relative; width: 300px; height: 300px; margin: 20px auto; }
+        #canvas { background: #fff; border-radius: 50%; border: 5px solid #ffd700; transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1); }
+        .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #ffd700; z-index: 10; }
+    </style>
+</head>
+<body>
+    <img src="https://i.postimg.cc/DzyTW14T/logofinal.png" class="logo">
+    <h3>LỘC XUÂN NHƯ Ý</h3>
+    <div class="form-box">
+        <input type="text" id="name" placeholder="Họ tên">
+        <input type="tel" id="phone" placeholder="Số điện thoại">
+        <button id="spin_btn" onclick="letGo()">QUAY NGAY</button>
+    </div>
+    <div class="wheel-wrap">
+        <div class="pointer"></div>
+        <canvas id="canvas" width="300" height="300"></canvas>
+    </div>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzqLL4fj7PDlfhYgIH-cOBVhT6yqUkMklur7UiRGlvS4p2ppQzku6xjlEwB6_orwGGx/exec';
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const prizes = ["Voucher 6%", "Voucher 8%", "Voucher 10%", "Voucher 15%", "ANTI TPD"];
+    const colors = ["#d32f2f", "#ffd700", "#d32f2f", "#ffd700", "#ffffff"];
+
+    function draw() {
+        const slice = (Math.PI * 2) / prizes.length;
+        for(let i=0; i<prizes.length; i++){
+            ctx.beginPath(); ctx.fillStyle = colors[i]; ctx.moveTo(150,150);
+            ctx.arc(150,150,150, i*slice, (i+1)*slice); ctx.fill();
+            ctx.save(); ctx.translate(150,150); ctx.rotate(i*slice + slice/2);
+            ctx.fillStyle = (colors[i]=="#d32f2f") ? "#fff" : "#b30000";
+            ctx.font = "bold 14px Arial"; ctx.textAlign = "right"; ctx.fillText(prizes[i], 135, 5);
+            ctx.restore();
+        }
+    }
+    draw();
+
+    function letGo() {
+        const n = document.getElementById('name').value.trim();
+        const p = document.getElementById('phone').value.trim();
+        const btn = document.getElementById('spin_btn');
+
+        if(!n || p.length < 10) {
+            alert("Vui lòng nhập đủ tên và 10 số điện thoại!");
+            return;
+        }
+
+        // Kiểm tra chặn trùng bằng bộ nhớ trình duyệt (LocalStorage)
+        if (localStorage.getItem('user_' + p)) {
+            alert("Số điện thoại này đã hết lượt quay!");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Hên xui nha...";
+
+        const rot = 3600 + Math.random() * 3600;
+        canvas.style.transform = `rotate(${rot}deg)`;
+
+        setTimeout(() => {
+            const actualDeg = rot % 360;
+            const idx = Math.floor((360 - actualDeg + 270) % 360 / (360/prizes.length));
+            const result = prizes[idx];
+
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+            // Gửi dữ liệu đi (không cần đợi kết quả để tránh treo)
+            fetch(scriptURL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ ten: n, sdt: p, qua: result }) 
+            });
+
+            // Ghi nhớ vào máy là số này đã quay rồi
+            localStorage.setItem('user_' + p, 'true');
+
+            setTimeout(() => {
+                alert("Chúc mừng " + n + "! Bạn trúng: " + result);
+                location.reload();
+            }, 1000);
+        }, 5000);
+    }
+</script>
+</body>
+</html>
